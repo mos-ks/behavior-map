@@ -1,0 +1,6 @@
+name: email
+description: Emails, messages and posts sent in the owner's name
+include_scopes: [email]
+include_ids:
+  - writing-voice-plain-words
+exclude_ids: []

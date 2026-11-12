@@ -1,0 +1,936 @@
+<!doctype html>
+<!-- Behaviour map, https://github.com/mos-ks/behavior-map. Copyright (c) 2026 Dr. Moussa Kassem Sbeyti. MIT licence, see LICENSE. -->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Behaviour map</title>
+<style>
+:root {
+  color-scheme: light dark;
+  --bg: oklch(0.985 0.004 85); --panel: oklch(0.962 0.006 85); --raised: oklch(1 0 0);
+  --line: oklch(0.89 0.008 85); --line-strong: oklch(0.80 0.01 85);
+  --ink: oklch(0.24 0.012 60); --ink-2: oklch(0.44 0.012 60); --ink-3: oklch(0.52 0.012 60);
+  --accent: oklch(0.46 0.13 265); --accent-ink: oklch(0.99 0 0); --accent-soft: oklch(0.93 0.035 265);
+  --bad: oklch(0.50 0.17 27); --bad-soft: oklch(0.95 0.03 27); --warn: oklch(0.50 0.11 70); --good: oklch(0.45 0.10 155);
+  --cat-l: 0.56; --cat-c: 0.13; --edge: oklch(0.24 0.012 60 / 0.13); --edge-strong: oklch(0.24 0.012 60 / 0.45);
+  --shadow: 0 1px 2px oklch(0.2 0.02 60 / 0.06), 0 8px 24px oklch(0.2 0.02 60 / 0.08);
+  --s1: 4px; --s2: 8px; --s3: 12px; --s4: 16px; --s5: 24px; --s6: 32px; --r: 6px;
+  --f-xs: 0.75rem; --f-s: 0.8125rem; --f-m: 0.9375rem; --f-l: 1.125rem;
+  --ease: cubic-bezier(0.16, 1, 0.3, 1);
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: oklch(0.19 0.008 70); --panel: oklch(0.225 0.009 70); --raised: oklch(0.26 0.01 70);
+    --line: oklch(0.31 0.01 70); --line-strong: oklch(0.42 0.012 70);
+    --ink: oklch(0.94 0.008 85); --ink-2: oklch(0.78 0.01 85); --ink-3: oklch(0.68 0.01 85);
+    --accent: oklch(0.78 0.11 265); --accent-ink: oklch(0.17 0.02 265); --accent-soft: oklch(0.32 0.06 265);
+    --bad: oklch(0.76 0.14 27); --bad-soft: oklch(0.30 0.06 27); --warn: oklch(0.80 0.11 80); --good: oklch(0.78 0.11 155);
+    --cat-l: 0.76; --cat-c: 0.115; --edge: oklch(0.94 0.008 85 / 0.13); --edge-strong: oklch(0.94 0.008 85 / 0.5);
+    --shadow: 0 1px 2px oklch(0 0 0 / 0.3), 0 8px 24px oklch(0 0 0 / 0.35);
+  }
+}
+* { box-sizing: border-box; }
+html, body { height: 100%; margin: 0; }
+body { background: var(--bg); color: var(--ink); font: var(--f-m)/1.45 "Segoe UI Variable Text", "Segoe UI", system-ui, -apple-system, "Helvetica Neue", sans-serif;
+  display: grid; grid-template-rows: auto 1fr; overflow: hidden; caret-color: var(--accent); }
+::selection { background: var(--accent-soft); color: var(--ink); }
+* { scrollbar-color: var(--line-strong) transparent; scrollbar-width: thin; }
+button, input, select, textarea { font: inherit; color: inherit; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: var(--r); }
+.num { font-variant-numeric: tabular-nums; }
+.muted { color: var(--ink-3); }
+[hidden] { display: none !important; }
+
+/* top bar */
+header { display: flex; align-items: center; gap: var(--s4); padding: var(--s2) var(--s4); border-bottom: 1px solid var(--line); background: var(--panel); flex-wrap: wrap; }
+h1 { font-size: var(--f-m); font-weight: 650; margin: 0; letter-spacing: -0.005em; white-space: nowrap; }
+nav { display: flex; gap: 2px; }
+nav button { border: 0; background: none; padding: 6px var(--s3); border-radius: var(--r); color: var(--ink-2); cursor: pointer; font-size: var(--f-s); font-weight: 550; display: flex; gap: 6px; align-items: center; }
+nav button:hover { background: var(--line); color: var(--ink); }
+nav button[aria-current="page"] { background: var(--raised); color: var(--ink); box-shadow: 0 0 0 1px var(--line-strong); }
+.count { background: var(--accent); color: var(--accent-ink); border-radius: 999px; font-size: 0.6875rem; padding: 0 6px; line-height: 1.5; font-weight: 650; }
+.search { position: relative; flex: 1 1 200px; max-width: 360px; margin-left: auto; }
+.search svg { position: absolute; left: 9px; top: 50%; translate: 0 -50%; color: var(--ink-3); pointer-events: none; }
+.search input[type=search] { width: 100%; padding: 6px 10px 6px 30px; }
+input[type=text], input[type=search], input[type=password], textarea, select { background: var(--raised); border: 1px solid var(--line-strong); border-radius: var(--r); padding: 6px 9px; font-size: var(--f-s); }
+input::placeholder, textarea::placeholder { color: var(--ink-3); }
+textarea { width: 100%; resize: vertical; line-height: 1.45; min-height: 2.4em; }
+.update { display: flex; align-items: center; gap: var(--s2); font-size: var(--f-xs); }
+.where { font-size: var(--f-xs); color: var(--ink-2); display: flex; align-items: center; gap: 6px; white-space: nowrap; }
+.where i { width: 7px; height: 7px; border-radius: 50%; background: var(--good); display: inline-block; }
+.where.off i { background: var(--ink-3); }
+
+.btn { border: 1px solid var(--line-strong); background: var(--raised); border-radius: var(--r); padding: 5px var(--s3); cursor: pointer; font-size: var(--f-s); font-weight: 550; transition: background 160ms var(--ease), border-color 160ms var(--ease); white-space: nowrap; }
+.btn:hover { border-color: var(--ink-3); }
+.btn:active { translate: 0 1px; }
+.btn.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+.btn.primary:hover { filter: brightness(1.08); }
+.btn.quiet { border-color: transparent; background: none; color: var(--ink-2); }
+.btn.quiet:hover { background: var(--line); color: var(--ink); }
+.btn:disabled { opacity: 0.45; cursor: default; filter: none; translate: none; }
+.icon-btn { width: 30px; height: 30px; padding: 0; display: grid; place-items: center; }
+
+/* layout */
+main { display: grid; grid-template-columns: minmax(0, 1fr); min-height: 0; }
+main.with-detail { grid-template-columns: minmax(0, 1fr) minmax(360px, 440px); }
+.view { min-height: 0; min-width: 0; overflow: auto; position: relative; }
+.pad { padding: var(--s5) var(--s5) var(--s6); }
+.toolbar { display: flex; gap: var(--s3); align-items: center; flex-wrap: wrap; margin-bottom: var(--s4); }
+.toolbar .spacer { flex: 1; }
+.seg { display: inline-flex; flex-wrap: wrap; border: 1px solid var(--line-strong); border-radius: var(--r); overflow: hidden; background: var(--raised); }
+.seg button { border: 0; background: none; padding: 5px 10px; font-size: var(--f-xs); font-weight: 550; color: var(--ink-2); cursor: pointer; }
+.seg button + button { border-left: 1px solid var(--line); }
+.seg button:hover { color: var(--ink); background: var(--panel); }
+.seg button[aria-pressed="true"] { background: var(--accent-soft); color: var(--ink); }
+h2 { font-size: var(--f-l); font-weight: 650; margin: var(--s6) 0 var(--s2); letter-spacing: -0.01em; }
+h2:first-child { margin-top: 0; }
+h3 { font-size: var(--f-xs); font-weight: 650; color: var(--ink-2); margin: var(--s5) 0 var(--s2); display: flex; align-items: center; gap: var(--s2); }
+.dot { width: 9px; height: 9px; border-radius: 50%; flex: none; display: inline-block; }
+p.lead { margin: 0 0 var(--s4); color: var(--ink-2); font-size: var(--f-s); }
+
+/* map */
+#map { position: absolute; inset: 0; }
+#map canvas { width: 100%; height: 100%; display: block; cursor: grab; touch-action: none; }
+#map canvas.dragging { cursor: grabbing; }
+#map canvas.pointing { cursor: pointer; }
+.map-tools { position: absolute; left: var(--s4); top: var(--s4); right: var(--s4); display: flex; flex-direction: column; align-items: flex-start; gap: var(--s3); pointer-events: none; }
+.map-tools > * { pointer-events: auto; }
+.map-tools .row { display: flex; gap: var(--s3); flex-wrap: wrap; }
+.legend { width: 210px; background: color-mix(in oklch, var(--bg) 88%, transparent); border: 1px solid var(--line); border-radius: var(--r); padding: var(--s2); display: grid; gap: 1px; max-height: calc(100vh - 220px); overflow: auto; }
+.legend button { border: 0; background: none; display: flex; align-items: center; gap: var(--s2); padding: 3px 6px; border-radius: 4px; font-size: var(--f-xs); cursor: pointer; text-align: left; color: var(--ink-2); }
+.legend button:hover { background: var(--line); color: var(--ink); }
+.legend button[aria-pressed="true"] { background: var(--accent-soft); color: var(--ink); }
+.legend button span:last-child { margin-left: auto; color: var(--ink-3); }
+.zoom { position: absolute; right: var(--s4); bottom: var(--s4); display: flex; gap: var(--s1); }
+.key { position: absolute; left: var(--s4); bottom: var(--s4); font-size: var(--f-xs); color: var(--ink-3); display: flex; gap: var(--s4); flex-wrap: wrap; max-width: 60%; }
+.key span { display: inline-flex; align-items: center; gap: 6px; }
+.key svg { flex: none; }
+#tip { position: fixed; pointer-events: none; background: var(--ink); color: var(--bg); font-size: var(--f-xs); padding: 4px 8px; border-radius: 4px; max-width: 320px; z-index: 5; box-shadow: var(--shadow); }
+
+/* rules list */
+table { border-collapse: collapse; width: 100%; font-size: var(--f-s); table-layout: fixed; }
+col.c-scope { width: 150px; } col.c-from { width: 190px; } col.c-said { width: 64px; } col.c-last { width: 110px; } col.c-tags { width: 190px; }
+th { text-align: left; font-weight: 550; color: var(--ink-3); font-size: var(--f-xs); padding: 0 var(--s3) var(--s1); white-space: nowrap; }
+td { padding: 7px var(--s3); border-top: 1px solid var(--line); vertical-align: baseline; }
+td.t { overflow-wrap: anywhere; }
+td.n, th.n { text-align: right; white-space: nowrap; }
+tr.row { cursor: pointer; }
+tr.row:hover td { background: var(--panel); }
+tr.row[aria-selected="true"] td { background: var(--accent-soft); }
+tr.row.off td.t { color: var(--ink-3); }
+tr.row td.t button { all: unset; cursor: pointer; display: block; width: 100%; }
+tr.row td.t button:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; border-radius: 3px; }
+.tag { font-size: 0.6875rem; padding: 1px 6px; border-radius: 4px; border: 1px solid var(--line-strong); color: var(--ink-2); white-space: nowrap; font-weight: 550; }
+.tag.bad { border-color: transparent; background: var(--bad-soft); color: var(--bad); }
+.tag.core { border-color: transparent; background: var(--accent-soft); color: var(--ink); }
+.tags { display: flex; gap: var(--s1); justify-content: flex-end; }
+
+/* inbox */
+.item { border-top: 1px solid var(--line); padding: var(--s3) 0 var(--s4); display: grid; gap: var(--s2); }
+.item q { quotes: none; font-size: var(--f-m); }
+.item .proposal { font-size: var(--f-s); }
+.item .meta { font-size: var(--f-xs); color: var(--ink-3); }
+.actions { display: flex; gap: var(--s2); flex-wrap: wrap; align-items: center; }
+.actions select { max-width: 240px; }
+.form { background: var(--panel); border: 1px solid var(--line); border-radius: var(--r); padding: var(--s4); display: grid; gap: var(--s3); max-width: 720px; }
+.form .two { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s3); }
+label { display: grid; gap: var(--s1); font-size: var(--f-xs); font-weight: 550; color: var(--ink-2); }
+label .hint { font-weight: 400; color: var(--ink-3); }
+.empty { color: var(--ink-2); font-size: var(--f-s); padding: var(--s4) 0; }
+.problems { background: var(--bad-soft); color: var(--bad); border-radius: var(--r); padding: var(--s2) var(--s3); font-size: var(--f-s); margin: 0; }
+.problems ul { margin: 0; padding-left: 1.1em; }
+
+/* build */
+.build { display: grid; gap: var(--s4); align-content: start; }
+.build h2, .build h3, .build p { margin: 0; }
+.build h3 { font-size: var(--f-s); font-weight: 650; color: var(--ink-2); margin-top: var(--s2); }
+.build .lead { max-width: 80ch; margin: 0; }
+.build .actions > span, .build .form [role=status] { font-size: var(--f-s); }
+.result h3 { font-size: var(--f-m); color: var(--ink); margin: 0; }
+.engines { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: var(--s3); }
+.engine { display: flex; gap: var(--s3); align-items: flex-start; padding: var(--s3) var(--s4); border: 1px solid var(--line-strong); border-radius: var(--r); background: var(--raised); cursor: pointer; font-size: var(--f-s); color: var(--ink); font-weight: 400; transition: border-color 160ms var(--ease); }
+.engine:hover { border-color: var(--ink-3); }
+.engine.on { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
+.engine input { margin: 3px 0 0; accent-color: var(--accent); }
+.engine > span { display: grid; grid-template-columns: 1fr auto; gap: var(--s1) var(--s3); align-items: baseline; flex: 1; }
+.engine b { font-weight: 650; }
+.engine small { grid-column: 1 / -1; color: var(--ink-2); font-size: var(--f-xs); line-height: 1.5; }
+.form.wide { max-width: none; }
+.form .three { display: grid; grid-template-columns: 2fr 1fr 1.4fr; gap: var(--s3); }
+.go { gap: var(--s4); }
+.btn.big { padding: 9px var(--s5); font-size: var(--f-m); }
+.progress { display: grid; gap: var(--s3); padding: var(--s4); border: 1px solid var(--line); border-radius: var(--r); background: var(--panel); }
+.progress .step { display: flex; gap: var(--s3); align-items: baseline; }
+.bar { height: 6px; border-radius: 999px; background: var(--line); overflow: hidden; }
+.bar i { display: block; height: 100%; width: 0; background: var(--accent); transition: width 400ms var(--ease); }
+.bar.busy i { width: 30%; animation: busy 1.4s var(--ease) infinite; }
+@keyframes busy { from { translate: -100% 0; } to { translate: 340% 0; } }
+.result { display: grid; gap: var(--s3); padding: var(--s4); border: 1px solid var(--line); border-radius: var(--r); background: var(--panel); }
+.result ul { margin: 0; padding-left: 1.1em; }
+.small { font-size: var(--f-xs); }
+.note { color: var(--ink-2); font-size: var(--f-s); }
+
+/* files */
+.files { display: grid; grid-template-columns: 300px minmax(0, 1fr); gap: var(--s5); align-items: start; }
+.files ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; }
+.files li button { all: unset; cursor: pointer; display: block; padding: 6px var(--s3); border-radius: var(--r); font-size: var(--f-s); width: 100%; box-sizing: border-box; }
+.files li button:hover { background: var(--panel); }
+.files li button[aria-current="true"] { background: var(--accent-soft); }
+.files li small { display: block; color: var(--ink-3); font-size: var(--f-xs); }
+.file { display: grid; gap: var(--s3); min-width: 0; }
+.file dl { margin: 0; display: grid; grid-template-columns: auto minmax(0, 1fr); gap: var(--s1) var(--s4); font-size: var(--f-s); }
+.file dt { color: var(--ink-3); white-space: nowrap; }
+.file dd { margin: 0; overflow-wrap: anywhere; }
+.file .path { font: 0.78rem ui-monospace, "Cascadia Mono", Consolas, monospace; }
+.file dd .switch + div { margin-top: 2px; }
+.credit { font-size: var(--f-xs); margin: var(--s5) 0 0; }
+.file-row { display: flex; align-items: baseline; justify-content: space-between; gap: var(--s2); }
+pre { margin: 0; background: var(--panel); border: 1px solid var(--line); border-radius: var(--r); padding: var(--s4); font: 0.78rem/1.55 ui-monospace, "Cascadia Mono", Consolas, monospace; white-space: pre-wrap; overflow-wrap: anywhere; }
+
+/* detail */
+aside { border-left: 1px solid var(--line); background: var(--panel); overflow: auto; min-height: 0; padding: var(--s4) var(--s5) var(--s6); display: grid; gap: var(--s4); align-content: start; }
+aside .head { display: flex; align-items: center; gap: var(--s2); font-size: var(--f-xs); color: var(--ink-2); }
+aside .head .spacer { flex: 1; }
+aside input.title { font-size: var(--f-l); font-weight: 650; width: 100%; border-color: transparent; background: none; padding: 4px 6px; margin: 0 -6px; letter-spacing: -0.01em; }
+aside input.title:hover { border-color: var(--line-strong); }
+aside input.title:focus { background: var(--raised); border-color: var(--line-strong); }
+.switches { display: flex; gap: var(--s4); flex-wrap: wrap; align-items: center; }
+.switch { display: inline-flex; align-items: center; gap: var(--s2); font-size: var(--f-s); font-weight: 500; color: var(--ink); cursor: pointer; }
+.switch input { appearance: none; width: 30px; height: 18px; border-radius: 999px; background: var(--line-strong); position: relative; margin: 0; cursor: pointer; transition: background 160ms var(--ease); }
+.switch input::after { content: ""; position: absolute; top: 2px; left: 2px; width: 14px; height: 14px; border-radius: 50%; background: var(--raised); transition: translate 160ms var(--ease); box-shadow: 0 1px 2px oklch(0 0 0 / 0.25); }
+.switch input:checked { background: var(--accent); }
+.switch input:checked::after { translate: 12px 0; }
+.facts { display: flex; gap: var(--s5); font-size: var(--f-xs); color: var(--ink-2); flex-wrap: wrap; }
+.facts b { display: block; font-size: var(--f-m); color: var(--ink); font-weight: 650; }
+.facts .bad b { color: var(--bad); }
+.savebar { display: flex; gap: var(--s3); align-items: center; position: sticky; bottom: calc(-1 * var(--s6)); background: var(--panel); padding: var(--s3) 0; border-top: 1px solid var(--line); }
+.savebar span { font-size: var(--f-xs); color: var(--ink-2); }
+aside h2.skill-name { margin: 0; overflow-wrap: anywhere; }
+aside p.about { margin: 0; font-size: var(--f-s); color: var(--ink-2); }
+aside li.pair { display: flex; justify-content: space-between; gap: var(--s3); }
+aside h4 { font-size: var(--f-xs); font-weight: 650; color: var(--ink-2); margin: 0 0 var(--s2); }
+aside ul { margin: 0; padding: 0; list-style: none; display: grid; gap: var(--s2); font-size: var(--f-s); }
+aside ul.quotes li { color: var(--ink); }
+aside ul.quotes small { display: block; color: var(--ink-3); font-size: var(--f-xs); }
+aside ul.links button { all: unset; cursor: pointer; color: var(--ink); text-decoration: underline; text-decoration-color: var(--line-strong); text-underline-offset: 3px; }
+aside ul.links button:hover { text-decoration-color: var(--ink); }
+aside ul.links button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 3px; }
+
+.skeleton { padding: var(--s5); display: grid; gap: var(--s3); max-width: 720px; }
+.skeleton i { height: 14px; border-radius: 4px; background: var(--line); display: block; }
+#lost { position: fixed; left: 50%; bottom: var(--s5); translate: -50% 0; background: var(--ink); color: var(--bg); padding: var(--s2) var(--s4); border-radius: var(--r); font-size: var(--f-s); box-shadow: var(--shadow); z-index: 10; max-width: calc(100vw - 32px); }
+#lost code { font: 0.8rem ui-monospace, Consolas, monospace; }
+
+@media (max-width: 900px) {
+  main.with-detail { grid-template-columns: minmax(0, 1fr); }
+  main.with-detail .view { display: none; }
+  aside { border-left: 0; }
+  .files { grid-template-columns: 1fr; }
+  .form .two, .form .three { grid-template-columns: 1fr; }
+  .pad { padding: var(--s4); }
+  .where { display: none; }
+  .key, .legend { display: none; }
+  td.hide-s, th.hide-s, col.hide-s { display: none; }
+  col.c-tags { width: 120px; }
+}
+@media (pointer: coarse) {
+  .btn, nav button, .seg button, .legend button, input[type=text], input[type=search], input[type=password], select { min-height: 44px; }
+  .icon-btn { width: 44px; height: 44px; }
+  input[type=text], input[type=search], input[type=password], textarea, select { font-size: 1rem; }
+  td { padding-block: 12px; }
+}
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } .bar.busy i { animation: none; width: 100%; opacity: 0.5; } }
+</style>
+</head>
+<body>
+<header>
+  <h1>Behaviour map</h1>
+  <nav id="nav" aria-label="Views"></nav>
+  <label class="search"><span hidden>Search rules and skills</span>
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+    <input id="q" type="search" placeholder="Search rules and skills" autocomplete="off">
+  </label>
+  <span class="update"><button id="update" class="btn" title="Read the new chats, look for skills again, rebuild what changed and save it to GitHub">Update</button><span id="updated" class="muted num" role="status"></span></span>
+  <span id="where" class="where"></span>
+</header>
+<main id="main"><div class="view" id="view"><div class="skeleton"><i style="width:40%"></i><i></i><i style="width:85%"></i><i style="width:70%"></i></div></div></main>
+<div id="tip" hidden></div>
+<div id="lost" role="alert" hidden></div>
+
+<script>
+"use strict";
+const TOKEN = "__TOKEN__";
+const VIEWS = [["map", "Map"], ["rules", "Rules"], ["skills", "Skills"], ["inbox", "Inbox"], ["files", "Files"], ["build", "Build"]];
+const RULE_VIEWS = ["map", "rules"];            // the views in which the open panel holds a rule that stays open across them
+const STATE_WORDS = { fresh: "", fading: "Fading", stale: "Stale", undated: "No date" };
+let S = null, sortBy = "said", skillFilter = "all", view = "map", selected = null, profile = "all", stateFilter = "all", catFilter = null, query = "", exportName = "CLAUDE.md", exportText = "";
+let draft = null, saving = false, refused = [], savedNote = "", openForm = null;
+
+const $ = (sel, el = document) => el.querySelector(sel);
+function h(tag, attrs, ...kids) {
+  const el = document.createElement(tag);
+  for (const [k, v] of Object.entries(attrs || {})) {
+    if (v === null || v === undefined || v === false) continue;
+    if (k === "class") el.className = v;
+    else if (k.startsWith("on")) el.addEventListener(k.slice(2), v);
+    else if (k === "value") el.value = v;
+    else if (k === "checked" || k === "disabled" || k === "selected" || k === "hidden") el[k] = !!v;
+    else el.setAttribute(k, v === true ? "" : v);
+  }
+  for (const kid of kids.flat()) if (kid !== null && kid !== undefined && kid !== false) el.append(kid);
+  return el;
+}
+const svg = (d, size = 16) => { const s = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+  s.setAttribute("viewBox", "0 0 24 24"); s.setAttribute("width", size); s.setAttribute("height", size); s.setAttribute("fill", "none");
+  s.setAttribute("stroke", "currentColor"); s.setAttribute("stroke-width", "2"); s.setAttribute("stroke-linecap", "round"); s.setAttribute("stroke-linejoin", "round");
+  s.setAttribute("aria-hidden", "true"); s.innerHTML = d; return s; };
+const ICON = { x: '<path d="M18 6 6 18M6 6l12 12"/>', plus: '<path d="M12 5v14M5 12h14"/>', minus: '<path d="M5 12h14"/>',
+  fit: '<path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/>' };
+
+async function api(path, body) {
+  let res;
+  try {
+    res = await fetch(path, { method: body ? "POST" : "GET", headers: { "X-Brain-Token": TOKEN, "Content-Type": "application/json" }, body: body ? JSON.stringify(body) : undefined });
+  } catch (e) { lost(true); throw e; }
+  lost(false);
+  const data = await res.json();
+  if (res.status === 503 && data.restart) { comeBack(); return new Promise(() => {}); }    // the page reloads; this answer never comes
+  if (res.status === 403) { lost(true, "This page is out of date. Reload it."); throw new Error("stale"); }
+  return { ok: res.ok, data };
+}
+async function comeBack() {       // the server is starting again after an update: wait for it, then load the new page
+  lost(true, "Updating the page.");
+  for (let i = 0; i < 40; i++) {
+    await new Promise(r => setTimeout(r, 700));
+    try { if ((await fetch("/", { cache: "no-store" })).ok) return location.reload(); } catch (e) { /* not up yet */ }
+  }
+  lost(true);
+}
+function lost(on, text) {
+  const el = $("#lost");
+  el.hidden = !on;
+  if (on) { el.textContent = ""; el.append(text || "The page lost its server. Start it again: ", text ? "" : h("code", {}, "python ui.py")); }
+}
+
+/* ---------- data helpers ---------- */
+let byId = {}, skillBy = {}, coreSet = new Set(), neighbours = {};
+function index() {
+  byId = Object.fromEntries(S.rules.map(r => [r.id, r]));
+  coreSet = new Set(profileIds("core"));
+  neighbours = {};
+  for (const e of S.related) { (neighbours[e.a] ||= []).push([e.b, e.score]); (neighbours[e.b] ||= []).push([e.a, e.score]); }
+  skillBy = Object.fromEntries(S.skills.map(k => [k.key, k]));
+  if (selected && !opened()) selected = null;
+}
+const broken = id => S.summary.broken[id] || 0;
+const fresh = id => S.summary.freshness[id] || "fresh";
+let theme = {};                                 // the CSS colours the canvas needs, read once per render
+const readTheme = () => { const cs = getComputedStyle(document.documentElement);
+  for (const k of ["--cat-l", "--cat-c", "--bg", "--ink", "--ink-2", "--bad", "--edge", "--edge-strong"]) theme[k] = cs.getPropertyValue(k).trim(); };
+const catColor = (cat, alpha = 1) => `oklch(${theme["--cat-l"]} ${theme["--cat-c"]} ${(S.categories.indexOf(cat) * 360 / S.categories.length + 20) % 360} / ${alpha})`;
+const catName = c => c === "ui-design" || c === "ui" ? c.replace("ui", "UI").replace("-", " ") : c.replace("-", " ").replace(/^./, m => m.toUpperCase());
+function matches(r) {
+  if (catFilter && r.category !== catFilter) return false;
+  if (profile !== "all" && !profileIds(profile).includes(r.id)) return false;
+  if (stateFilter === "off" && r.enabled) return false;
+  if (stateFilter === "broken" && !broken(r.id)) return false;
+  if (stateFilter === "fading" && !["fading", "stale", "undated"].includes(fresh(r.id))) return false;
+  if (stateFilter === "question" && r.needs_owner !== true) return false;
+  if (query) {
+    const hay = (r.title + " " + r.rule + " " + r.id + " " + (r.quotes || []).map(q => q.quote).join(" ")).toLowerCase();
+    if (!query.toLowerCase().split(/\s+/).every(w => hay.includes(w))) return false;
+  }
+  return true;
+}
+const ruleStates = r => [                       // [label, tag class], shown as tags in the table and as words on the map
+  !r.enabled && ["Off", ""], broken(r.id) && ["Broken " + broken(r.id) + "x", "bad"],
+  r.enabled && STATE_WORDS[fresh(r.id)] && [STATE_WORDS[fresh(r.id)], ""], coreSet.has(r.id) && ["Core", "core"]].filter(Boolean);
+const stateWords = r => { const w = ruleStates(r).map(([label]) => label.toLowerCase()); return w.length ? " (" + w.join(", ") + ")" : ""; };
+const profileIds = name => (S.profiles.find(p => p.name === name) || { ids: [] }).ids;
+const hashFor = () => "#" + view + (selected ? "/" + selected : "");
+const opened = () => view === "skills" ? skillBy[selected] : byId[selected];      // what the side panel shows
+const activeIn = k => k.where === "everywhere" ? "Every project" : k.where === "nowhere" ? "Not installed"
+  : k.projects.slice(0, 2).join(", ") + (k.projects.length > 2 ? " and " + (k.projects.length - 2) + " more" : "");
+function skillMatches(k) {
+  if (skillFilter === "unused" ? k.used > 0 : skillFilter !== "all" && k.where !== skillFilter) return false;
+  const hay = (k.key + " " + k.description + " " + k.source).toLowerCase();
+  return !query || query.toLowerCase().split(/\s+/).every(w => hay.includes(w));
+}
+const openSignals = () => S.signals.filter(s => s.status === "open");
+
+/* ---------- top bar ---------- */
+function renderTop() {
+  const nav = $("#nav"); nav.textContent = "";
+  for (const [id, label] of VIEWS) {
+    const n = id === "inbox" ? openSignals().length : 0;
+    nav.append(h("button", { "aria-current": view === id ? "page" : null, onclick: () => { if (selected && (window.innerWidth <= 900 || !RULE_VIEWS.includes(id) || !RULE_VIEWS.includes(view))) { if (!leaveRule()) return; selected = null; } view = id; render(); } },
+      label, n ? h("span", { class: "count num" }, String(n)) : null));
+  }
+  const w = $("#where");
+  w.className = "where" + (S.installed ? "" : " off");
+  w.textContent = ""; w.append(h("i"), S.installed ? "Claude Code reads this in every project" : "Not installed for Claude Code");
+  w.title = S.folder;
+  if (!updating) $("#updated").textContent = updateNote || (S.updated ? "read " + S.updated : "");
+}
+
+/* ---------- views ---------- */
+function render() {
+  if (!S) return;
+  readTheme();
+  if (location.hash !== hashFor()) history[location.hash ? "pushState" : "replaceState"](null, "", hashFor());
+  renderTop();
+  const main = $("#main"), old = $("#view"), v = h("div", { class: "view", id: "view" });
+  main.className = selected ? "with-detail" : "";
+  if (view === "map") renderMap(v); else { stopMap(); ({ rules: renderRules, skills: renderSkills, inbox: renderInbox, files: renderFiles, build: renderBuild })[view](v); }
+  const top = old && view !== "map" ? old.scrollTop : 0;
+  old.replaceWith(v);
+  v.scrollTop = top;
+  const aside = $("aside"); if (aside) aside.remove();
+  if (selected) main.append(view === "skills" ? renderSkillDetail() : renderDetail());
+  if (view === "map") startMap();
+}
+
+function filters() {
+  const seg = (items, cur, set) => h("div", { class: "seg", role: "group" }, items.map(([id, label]) =>
+    h("button", { "aria-pressed": String(cur === id), onclick: () => { set(id); render(); } }, label)));
+  return [
+    seg([["all", "All"], ...S.profiles.map(p => [p.name, catName(p.name)])], profile, v => profile = v),
+    seg([["all", "Any state"], ["broken", "Broken"], ["fading", "Fading"], ["question", "Open question"], ["off", "Off"]], stateFilter, v => stateFilter = v),
+  ];
+}
+
+function renderRules(v) {
+  const rows = S.rules.filter(matches);
+  if (sortBy === "last") rows.sort((a, b) => String(b.last_seen || "").localeCompare(String(a.last_seen || "")));
+  if (sortBy === "name") rows.sort((a, b) => a.title.localeCompare(b.title));
+  const pad = h("div", { class: "pad" });
+  pad.append(h("div", { class: "toolbar" }, filters(),
+    h("select", { "aria-label": "Order", onchange: e => { sortBy = e.target.value; render(); } }, [["said", "Most said first"], ["last", "Latest said first"], ["name", "By name"]].map(([v, l]) => h("option", { value: v, selected: sortBy === v }, l))),
+    h("span", { class: "spacer" }),
+    h("span", { class: "muted num", style: "font-size:var(--f-xs)" }, rows.length + " of " + S.rules.length),
+    h("button", { class: "btn", onclick: () => { openForm = { key: "rules", signals: [] }; render(); } }, "New rule")));
+  if (openForm && openForm.key === "rules") pad.append(ruleForm(openForm));
+  if (!rows.length) pad.append(h("p", { class: "empty" }, "No rule fits these filters. Clear the search or pick another group."));
+  for (const cat of S.categories) {
+    const group = rows.filter(r => r.category === cat);
+    if (!group.length) continue;
+    pad.append(h("h3", {}, h("span", { class: "dot", style: "background:" + catColor(cat) }), catName(cat), h("span", { class: "muted num" }, String(group.length))));
+    const t = h("table", {}, h("colgroup", {}, h("col"), h("col", { class: "c-scope hide-s" }), h("col", { class: "c-said hide-s" }), h("col", { class: "c-last hide-s" }), h("col", { class: "c-tags" })), h("thead", {}, h("tr", {}, h("th", {}, "Rule"), h("th", { class: "hide-s" }, "Applies to"), h("th", { class: "n hide-s" }, "Said"), h("th", { class: "n hide-s" }, "Last said"), h("th", { class: "n" }, ""))));
+    const body = h("tbody");
+    for (const r of group) {
+      const tags = ruleStates(r).map(([label, cls]) => h("span", { class: "tag " + cls }, label));
+      body.append(h("tr", { class: "row" + (r.enabled ? "" : " off"), "aria-selected": String(selected === r.id), onclick: () => select(r.id) },
+        h("td", { class: "t" }, h("button", {}, r.title)),
+        h("td", { class: "hide-s muted", style: "white-space:nowrap" }, String(r.scope).replace("project:", "") + (r.strength === "soft" ? ", soft" : "")),
+        h("td", { class: "n num hide-s" }, r.times_seen + "x"), h("td", { class: "n num muted hide-s" }, r.last_seen || ""),
+        h("td", { class: "n" }, h("div", { class: "tags" }, tags))));
+    }
+    t.append(body); pad.append(t);
+  }
+  v.append(pad);
+}
+
+function renderSkills(v) {
+  const rows = S.skills.filter(skillMatches), pad = h("div", { class: "pad" });
+  const seg = h("div", { class: "seg", role: "group" }, [["all", "All"], ["everywhere", "Every project"], ["projects", "Some projects"], ["nowhere", "Not installed"], ["unused", "Never used"]]
+    .map(([id, label]) => h("button", { "aria-pressed": String(skillFilter === id), onclick: () => { skillFilter = id; render(); } }, label)));
+  pad.append(h("div", { class: "toolbar" }, seg, h("span", { class: "spacer" }), h("span", { class: "muted num", style: "font-size:var(--f-xs)" }, rows.length + " of " + S.skills.length)));
+  pad.append(h("p", { class: "lead" }, "Every skill on this computer: where it is active and how often an assistant loaded it. Use is counted from your Claude Code chats; test runs started by a script do not count."));
+  if (!S.skills.length) pad.append(h("p", { class: "empty" }, "No skills were found. They are looked for in your Claude skills folder, in plugins that are switched on, in your projects, and in the folder named as own_skills in the map's settings.json."));
+  else if (!rows.length) pad.append(h("p", { class: "empty" }, "No skill fits these filters. Clear the search or pick another group."));
+  for (const [where, title] of [["everywhere", "Active in every project"], ["projects", "Active in some projects"], ["nowhere", "Not installed"]]) {
+    const group = rows.filter(k => k.where === where).sort((a, b) => b.used - a.used || a.key.localeCompare(b.key));
+    if (!group.length) continue;
+    pad.append(h("h3", {}, title, h("span", { class: "muted num" }, String(group.length))));
+    const body = h("tbody"), some = where === "projects";
+    for (const k of group)
+      body.append(h("tr", { class: "row" + (k.used ? "" : " off"), "aria-selected": String(selected === k.key), onclick: () => select(k.key) },
+        h("td", { class: "t" }, h("button", {}, k.key)), some ? h("td", { class: "muted" }, activeIn(k)) : null, h("td", { class: "hide-s muted" }, k.source),
+        h("td", { class: "n num hide-s" }, k.used ? k.used + "x" : "never"), h("td", { class: "n num muted hide-s" }, k.last_used || "")));
+    pad.append(h("table", {}, h("colgroup", {}, h("col"), some ? h("col", { class: "c-tags" }) : null, h("col", { class: "c-from hide-s" }), h("col", { class: "c-said hide-s" }), h("col", { class: "c-last hide-s" })),
+      h("thead", {}, h("tr", {}, h("th", {}, "Skill"), some ? h("th", {}, "Active in") : null, h("th", { class: "hide-s" }, "From"), h("th", { class: "n hide-s" }, "Used"), h("th", { class: "n hide-s" }, "Last used"))), body));
+  }
+  v.append(pad);
+}
+async function switchSkill(key, action) {
+  const { ok, data } = await api("/api/skill", { key, action });
+  take(data); refused = ok ? [] : data.refused || ["The skill was not changed."];
+  savedNote = ok ? { install: "Installed.", update: "Updated.", remove: "Removed." }[action] + " It counts from the next session." : "";
+  render();
+}
+function renderSkillDetail() {
+  const k = skillBy[selected], usedIn = Object.entries(k.used_in).sort((a, b) => b[1] - a[1]), rules = k.rules.filter(id => byId[id]);
+  return h("aside", { "aria-label": "Skill" },
+    h("div", { class: "head" }, k.source.replace(/^./, m => m.toUpperCase()), h("span", { class: "spacer" }),
+      h("button", { class: "btn quiet icon-btn", "aria-label": "Close", onclick: closeRule }, svg(ICON.x))),
+    h("h2", { class: "skill-name" }, k.key),
+    h("div", { class: "facts num" }, h("div", {}, h("b", {}, k.used ? k.used + "x" : "never"), "used"), h("div", {}, h("b", {}, k.last_used || "no date"), "last used"),
+      h("div", {}, h("b", {}, k.where === "projects" ? k.projects.length + (k.projects.length === 1 ? " project" : " projects") : activeIn(k)), "active in")),
+    k.switch.length ? h("div", { class: "switches" },
+      h("label", { class: "switch", title: "Copies your skill into your Claude skills folder, or takes that copy out again" },
+        h("input", { type: "checkbox", checked: k.where === "everywhere", onchange: e => { e.target.disabled = true; switchSkill(k.key, e.target.checked ? "install" : "remove"); } }), "Active in every project"),
+      k.switch.includes("update") ? h("button", { class: "btn", title: "The installed copy differs from your own version of the skill", onclick: e => { e.target.disabled = true; switchSkill(k.key, "update"); } }, "Update the installed copy") : null) : null,
+    refused.length ? problems(refused) : null,
+    savedNote ? h("span", { role: "status", class: "muted", style: "font-size:var(--f-xs)" }, savedNote) : null,
+    k.description ? h("p", { class: "about" }, k.description) : null,
+    usedIn.length ? h("div", {}, h("h4", {}, "Used in"), h("ul", {}, usedIn.map(([name, n]) => h("li", { class: "pair num" }, h("span", {}, name), h("span", { class: "muted" }, n + "x"))))) : null,
+    k.where === "projects" ? h("div", {}, h("h4", {}, "Active in"), h("ul", {}, k.projects.map(name => h("li", {}, name)))) : null,
+    rules.length ? h("div", {}, h("h4", {}, "Rules close to it"), h("ul", { class: "links" }, rules.map(id => h("li", {}, h("button", { onclick: () => { view = "rules"; selected = id; render(); } }, byId[id].title))))) : null,
+    k.path ? h("div", { class: "muted", style: "font-size:var(--f-xs);overflow-wrap:anywhere" }, k.path) : null);
+}
+
+function ruleForm(form) {
+  const f = form.fields ||= { category: form.category || S.categories[0], title: "", rule: "", scope: "always", strength: "hard" };
+  const set = k => e => { f[k] = e.target.value; };
+  return h("form", { class: "form", onsubmit: async e => {
+      e.preventDefault(); form.busy = true; render();
+      const { ok, data } = await api("/api/rule", { ...f, signals: form.signals });
+      form.busy = false; take(data);
+      if (ok) { openForm = null; selected = data.id; savedNote = "Rule created."; } else form.problems = data.refused;
+      render();
+    } },
+    h("div", { class: "two" },
+      h("label", {}, "Title", h("input", { type: "text", value: f.title, oninput: set("title"), required: true, placeholder: "Short name of the rule" })),
+      h("label", {}, "Category", h("select", { onchange: set("category") }, S.categories.map(c => h("option", { value: c, selected: c === f.category }, catName(c)))))),
+    h("label", {}, "Rule", h("textarea", { rows: 3, oninput: set("rule"), required: true, placeholder: "One or two sentences an assistant can follow" }, f.rule)),
+    h("div", { class: "two" },
+      h("label", {}, "Applies to", h("select", { onchange: set("scope") }, S.scopes.map(s => h("option", { value: s, selected: s === f.scope }, s)))),
+      h("label", {}, "How firm", h("select", { onchange: set("strength") }, h("option", { value: "hard", selected: f.strength === "hard" }, "Firm"), h("option", { value: "soft", selected: f.strength === "soft" }, "Soft default")))),
+    form.problems ? problems(form.problems) : null,
+    h("div", { class: "actions" }, h("button", { class: "btn primary", disabled: form.busy }, form.busy ? "Creating" : "Create rule"),
+      h("button", { type: "button", class: "btn quiet", onclick: () => { openForm = null; render(); } }, "Cancel")));
+}
+const problems = list => h("div", { class: "problems", role: "alert" }, h("ul", {}, list.map(p => h("li", {}, p))));
+
+function rulePicker(onPick) {
+  const sel = h("select", { "aria-label": "Count it for another rule", onchange: e => e.target.value && onPick(e.target.value) }, h("option", { value: "" }, "Another rule"));
+  for (const cat of S.categories) {
+    const g = h("optgroup", { label: catName(cat) });
+    for (const r of S.rules.filter(r => r.category === cat)) g.append(h("option", { value: r.id }, r.title.slice(0, 70)));
+    if (g.children.length) sel.append(g);
+  }
+  return sel;
+}
+async function decide(id, action, rule) { const { data } = await api("/api/signal/" + id, { action, rule }); take(data); render(); }
+
+function renderInbox(v) {
+  const pad = h("div", { class: "pad" }), open = openSignals(), sum = S.summary;
+  const counted = S.signals.filter(s => s.status === "attached");
+  pad.append(h("h2", {}, "Corrections since " + sum.since));
+  pad.append(h("p", { class: "lead" }, "Short prompts in which you told an assistant how to work. One that belongs to a rule counts as that rule being broken. Something said " + S.limits.group_min + " times on " + S.limits.group_min_days + " days is offered as a new rule. What nobody touches leaves this list after " + S.limits.inbox_days + " days."));
+
+  if (sum.proposals.length) {
+    pad.append(h("h3", {}, "Said often enough to become a rule"));
+    for (const g of sum.proposals) {
+      const key = "g" + g.ids[0];
+      pad.append(h("div", { class: "item" }, g.texts.map(t => h("q", {}, t)), h("div", { class: "meta num" }, g.count + " times on " + g.days + " days"),
+        openForm && openForm.key === key ? ruleForm(openForm) : h("div", { class: "actions" },
+          h("button", { class: "btn primary", onclick: () => { openForm = { key, signals: g.ids }; render(); } }, "Make it a rule"))));
+    }
+  }
+  const j = S.judge || {}, aside = sum.counts["set aside"] || 0, unsorted = (sum.counts.waiting || 0) + open.filter(s => !s.judged).length;
+  pad.append(h("p", { class: "lead" }, j.on
+    ? "Sorted by your local model (" + j.model + ")." + (aside ? " It set " + aside + " aside as talk about the task at hand." : "") + (j.note ? " Note: " + j.note + "." : "")
+    : (j.model ? "Your local model (" + j.model + ") did not answer" : "No local model is set up") + ", so this list is sorted by matching words only"
+      + (unsorted && j.model ? "; " + unsorted + " wait for the next Update that reaches it." : ".")));
+  pad.append(h("h3", {}, "Waiting", h("span", { class: "muted num" }, String(open.length))));
+  if (!open.length) pad.append(h("p", { class: "empty" }, "Nothing is waiting. New corrections appear here when you start this page or press Update."));
+  for (const s of open.slice().reverse()) {
+    const key = "s" + s.id;
+    pad.append(h("div", { class: "item" }, h("q", {}, s.text), h("div", { class: "meta num" }, s.date + ", " + s.project),
+      s.proposal ? h("div", { class: "proposal" }, h("span", { class: "muted" }, "As a rule: "), s.proposal) : null,
+      openForm && openForm.key === key ? ruleForm(openForm) : h("div", { class: "actions" },
+        s.suggest.filter(([id]) => byId[id]).slice(0, 2).map(([id]) => h("button", { class: "btn", title: byId[id].rule, onclick: () => decide(s.id, "attach", id) }, "Counts for: " + byId[id].title.slice(0, 48))),
+        rulePicker(id => decide(s.id, "attach", id)),
+        h("button", { class: "btn" + (s.proposal ? " primary" : ""), onclick: () => { openForm = { key, signals: [s.id], fields: s.proposal ? { category: S.categories[0], title: "", rule: s.proposal, scope: "always", strength: "hard" } : undefined }; render(); } }, "New rule"),
+        h("button", { class: "btn quiet", onclick: () => decide(s.id, "dismiss") }, "Not a rule"))));
+  }
+  if (counted.length) {
+    pad.append(h("h3", {}, "Counted on a rule", h("span", { class: "muted num" }, String(counted.length))));
+    for (const s of counted.slice().reverse())
+      pad.append(h("div", { class: "item" }, h("q", {}, s.text), h("div", { class: "meta num" }, s.date + ", " + s.project),
+        h("div", { class: "actions" }, h("button", { class: "btn quiet", onclick: () => select(s.rule) }, byId[s.rule] ? byId[s.rule].title.slice(0, 60) : s.rule),
+          h("button", { class: "btn quiet", onclick: () => decide(s.id, "reopen") }, "Undo"))));
+  }
+  v.append(pad);
+}
+
+let exportLoaded = null;                        // the file whose text is on screen; cleared when the rules change
+async function loadExport(name) { exportName = name; const { data } = await api("/api/export/" + name); exportText = data.text || ""; exportLoaded = name; if (view === "files") render(); }
+function renderFiles(v) {
+  const pad = h("div", { class: "pad" }), files = S.exports || [], cur = files.find(f => f.name === exportName) || files[0];
+  pad.append(h("h2", {}, "What each tool is given"), h("p", { class: "lead" }, "These files are written from the rules every time you save. Change a rule, not the file: the next save writes it again. The always-on core has "
+    + S.limits.core_lines + " of " + S.limits.max_core_lines + " lines."));
+  if (S.problems.length) pad.append(problems(S.problems));
+  if (!cur) { pad.append(h("p", { class: "empty" }, "The file list needs a newer start of this page. Stop it and start it again.")); v.append(pad); return; }
+  pad.append(h("div", { class: "files" },
+    h("ul", {}, files.map(f => h("li", {}, h("button", { "aria-current": String(cur.name === f.name), onclick: () => { fileNote = ""; loadExport(f.name); } },
+      h("span", { class: "file-row" }, f.label, h("span", { class: "tag" + (f.live ? " core" : "") }, f.live ? "In use" : "Not in use")), h("small", {}, f.about))))),
+    h("div", { class: "file" },
+      h("dl", {}, h("dt", {}, "Written to"), h("dd", {}, f_path(cur.file)), h("dt", {}, "Read by"), h("dd", {}, cur.used),
+        (cur.tools || []).flatMap(t => [h("dt", {}, t.label), h("dd", {},
+          h("label", { class: "switch", title: "Puts the core into the file " + t.label + " reads in every project. Text of your own in that file is kept, and the file as it was is saved beside it." },
+            h("input", { type: "checkbox", checked: t.live, onchange: e => { e.target.disabled = true; installTool(t.tool, e.target.checked ? "install" : "remove"); } }),
+            t.live ? "Installed" : "Install"), h("div", { class: "muted" }, f_path(t.target)))])),
+      h("div", { class: "actions" },
+        exportLoaded === cur.name ? copyParts(exportText).map(([label, text]) => h("button", { class: "btn", onclick: () => copyText(text, label) }, label)) : null,
+        fileNote ? h("span", { role: "status", class: "muted", style: "font-size:var(--f-xs)" }, fileNote) : null),
+      h("pre", { tabindex: "0" }, exportLoaded === cur.name ? exportText || "This file has not been written yet." : "Loading"))),
+    h("p", { class: "credit muted" }, "Behaviour map by Dr. Moussa Kassem Sbeyti. MIT licence. github.com/mos-ks/behavior-map"));
+  v.append(pad);
+  if (exportLoaded !== cur.name) loadExport(cur.name);
+}
+let fileNote = "";
+async function installTool(tool, action) {
+  const { ok, data } = await api("/api/install", { tool, action });
+  take(data); fileNote = ok ? sentence(data.note) + " It counts from the next session." : (data.refused || data.problems || ["That did not work."]).join(" ");
+  render();
+}
+const sentence = text => { const s = String(text || "").trim(); return s ? s[0].toUpperCase() + s.slice(1) + (s.endsWith(".") ? "" : ".") : ""; };
+function copyParts(text) {       // what can be copied: each ChatGPT block on its own, any other file as a whole
+  const blocks = [...text.matchAll(/^=== (.+?) \(\d+ of \d+ characters\) ===\n([\s\S]*?)(?=\n\n=== |\s*$)/gm)];
+  if (blocks.length) return blocks.map(m => ["Copy: " + m[1], m[2].trim()]);
+  const body = text.replace(/^(<!--.*-->|# Generated.*)\n/, "").trim();
+  return body ? [["Copy the text", body]] : [];
+}
+async function copyText(text, label) {
+  try { await navigator.clipboard.writeText(text); fileNote = "Copied (" + text.length + " characters)."; }
+  catch (e) { fileNote = "The browser did not allow copying. Select the text below and copy it."; }
+  render();
+}
+const f_path = file => h("span", { class: "path" }, file);
+
+/* ---------- detail ---------- */
+const editable = r => ({ title: r.title, rule: r.rule, short: r.short || "", why: r.why || "", boundary: r.boundary || "", strength: r.strength,
+  scope: r.scope, enabled: r.enabled, core: coreSet.has(r.id), local: r.local === true });
+const isDirty = () => !!(draft && byId[selected]) && Object.entries(editable(byId[selected])).some(([k, v]) => draft[k] !== v);
+function leaveRule() {       // true when the open rule may be closed
+  if (isDirty() && !confirm("Discard the changes to this rule that are not saved?")) return false;
+  draft = null; refused = []; savedNote = ""; return true;
+}
+function select(id) {
+  if (selected !== id && !leaveRule()) return;
+  selected = id; render();
+}
+function closeRule() { if (leaveRule()) { selected = null; render(); } }
+function renderDetail() {
+  const r = byId[selected];
+  const base = editable(r);
+  draft ||= { ...base };
+  const isProject = String(r.scope).startsWith("project:");
+  const saveBtn = h("button", { class: "btn primary", disabled: true }, "Save");
+  const note = h("span", { role: "status" }, savedNote);
+  const words = h("span", { class: "hint num" });
+  const refresh = () => { saveBtn.disabled = !isDirty() || saving; const n = draft.short.trim() ? draft.short.trim().split(/\s+/).length : 0;
+    words.textContent = n + " of " + S.limits.max_short_words + " words"; words.style.color = n > S.limits.max_short_words ? "var(--bad)" : ""; };
+  const bind = k => e => { draft[k] = e.target.type === "checkbox" ? e.target.checked : e.target.value; note.textContent = ""; refresh(); };
+  const area = (k, label, rows) => h("label", {}, label, h("textarea", { rows, oninput: bind(k) }, draft[k]));
+  const save = async e => {
+    e.preventDefault(); saving = true; refresh();
+    const changes = {}; for (const k of Object.keys(base)) if (draft[k] !== base[k]) changes[k] = draft[k];
+    const { ok, data } = await api("/api/rule/" + r.id, changes);
+    saving = false; take(data);
+    if (ok) { draft = null; refused = []; savedNote = S.installed ? "Saved. Claude Code uses it from the next session." : "Saved."; }
+    else { refused = data.refused || ["The change was not saved."]; savedNote = ""; }
+    render();
+  };
+  const near = (neighbours[r.id] || []).sort((a, b) => b[1] - a[1]).slice(0, 5).filter(([id]) => byId[id]);
+  const b = broken(r.id);
+  return h("aside", { "aria-label": "Rule" },
+    h("div", { class: "head" }, h("span", { class: "dot", style: "background:" + catColor(r.category) }), catName(r.category), h("span", { class: "spacer" }),
+      h("button", { class: "btn quiet icon-btn", "aria-label": "Close", onclick: closeRule }, svg(ICON.x))),
+    h("form", { onsubmit: save, style: "display:grid;gap:var(--s4)" },
+      h("input", { class: "title", type: "text", value: draft.title, "aria-label": "Title", oninput: bind("title") }),
+      h("div", { class: "facts num" }, h("div", {}, h("b", {}, r.times_seen + "x"), "said"), h("div", {}, h("b", {}, r.last_seen || "no date"), "last said"),
+        h("div", { class: b ? "bad" : "" }, h("b", {}, b + "x"), "broken since " + S.summary.since)),
+      h("div", { class: "switches" },
+        h("label", { class: "switch" }, h("input", { type: "checkbox", checked: draft.enabled, onchange: bind("enabled") }), "On"),
+        h("label", { class: "switch", title: "The short list every session starts with" }, h("input", { type: "checkbox", checked: draft.core, onchange: bind("core") }), "Always-on core"),
+        h("label", { class: "switch", title: "Keep it in the " + S.limits.max_local_words + "-word prompt for the local model" }, h("input", { type: "checkbox", checked: draft.local, onchange: bind("local") }), "Local model")),
+      h("div", { class: "form", style: "padding:0;border:0;background:none" }, h("div", { class: "two" },
+        h("label", {}, "Applies to", isProject ? h("input", { type: "text", value: String(r.scope).replace("project:", "only "), disabled: true })
+          : h("select", { onchange: bind("scope") }, S.scopes.map(s => h("option", { value: s, selected: s === draft.scope }, s)))),
+        h("label", {}, "How firm", h("select", { onchange: bind("strength") }, h("option", { value: "hard", selected: draft.strength === "hard" }, "Firm"), h("option", { value: "soft", selected: draft.strength === "soft" }, "Soft default"))))),
+      area("rule", "Rule", 5),
+      h("label", {}, h("span", {}, "Short line ", words), h("input", { type: "text", value: draft.short, oninput: bind("short"), placeholder: "Needed for the always-on core" })),
+      area("why", "Why", 2), area("boundary", "Where it applies and where not", 2),
+      refused.length ? problems(refused) : null,
+      h("div", { class: "savebar" }, saveBtn, note)),
+    r.quotes && r.quotes.length ? h("div", {}, h("h4", {}, "In your words"), h("ul", { class: "quotes" }, r.quotes.map(q => h("li", {}, q.quote, h("small", { class: "num" }, (q.date || "no date") + ", " + q.project))))) : null,
+    near.length ? h("div", {}, h("h4", {}, "Close to"), h("ul", { class: "links" }, near.map(([id]) => h("li", {}, h("button", { onclick: () => select(id) }, byId[id].title))))) : null,
+    h("div", { class: "muted", style: "font-size:var(--f-xs);overflow-wrap:anywhere" }, r.path),
+    (refresh(), null));
+}
+
+/* ---------- map ---------- */
+const pos = {};            // node id -> {x, y}, kept across refreshes
+let cam = { x: 0, y: 0, k: 1 }, mapEl = null, ctx = null, nodes = [], edges = [], hover = null, raf = 0, resizeObs = null;
+
+function renderMap(v) {
+  mapEl = h("div", { id: "map" });
+  const canvas = h("canvas", { role: "img", "aria-label": "Graph of all rules, grouped by category. The Rules view lists the same rules as a table." });
+  const counts = Object.fromEntries(S.categories.map(c => [c, S.rules.filter(r => r.category === c).length]));
+  const ring = '<circle cx="7" cy="7" r="4" fill="currentColor"/><circle cx="7" cy="7" r="6.2" fill="none" stroke="currentColor" stroke-width="1"/>';
+  const keyIcon = inner => { const s = document.createElementNS("http://www.w3.org/2000/svg", "svg"); s.setAttribute("width", 14); s.setAttribute("height", 14); s.setAttribute("viewBox", "0 0 14 14"); s.innerHTML = inner; return s; };
+  mapEl.append(canvas,
+    h("div", { class: "map-tools" }, h("div", { class: "row" }, filters()),
+      h("div", { class: "legend" }, S.categories.filter(c => counts[c]).map(c => h("button", { "aria-pressed": String(catFilter === c), onclick: () => { catFilter = catFilter === c ? null : c; render(); } },
+        h("span", { class: "dot", style: "background:" + catColor(c) }), h("span", {}, catName(c)), h("span", { class: "num" }, String(counts[c])))))),
+    h("div", { class: "key" }, h("span", {}, keyIcon(ring), "always-on core"), h("span", {}, keyIcon('<circle cx="7" cy="7" r="4.5" fill="none" stroke="currentColor" stroke-width="1.4"/>'), "switched off"),
+      h("span", { style: "color:var(--bad)" }, keyIcon('<circle cx="7" cy="7" r="5" fill="currentColor"/>'), "broken since " + S.summary.since), h("span", {}, "bigger = said more often, paler = not said for a while")),
+    h("div", { class: "zoom" }, h("button", { class: "btn icon-btn", "aria-label": "Zoom out", onclick: () => zoomBy(1 / 1.3) }, svg(ICON.minus)),
+      h("button", { class: "btn icon-btn", "aria-label": "Zoom in", onclick: () => zoomBy(1.3) }, svg(ICON.plus)),
+      h("button", { class: "btn icon-btn", "aria-label": "Show everything", onclick: () => { fit(); draw(); } }, svg(ICON.fit))));
+  v.style.overflow = "hidden"; v.append(mapEl);
+}
+function stopMap() { if (resizeObs) resizeObs.disconnect(); resizeObs = null; mapEl = null; ctx = null; cancelAnimationFrame(raf); $("#tip").hidden = true; }
+
+let litIds = new Set();
+function buildGraph() {
+  litIds = new Set(S.rules.filter(matches).map(r => r.id));
+  const cats = S.categories.filter(c => S.rules.some(r => r.category === c));
+  nodes = []; edges = [];
+  cats.forEach((c, i) => { const a = i / cats.length * Math.PI * 2 - Math.PI / 2;
+    pos["cat:" + c] ||= { x: Math.cos(a) * 330, y: Math.sin(a) * 330 };
+    nodes.push({ id: "cat:" + c, hub: true, cat: c, r: 7, ...pos["cat:" + c] }); });
+  S.rules.forEach((r, i) => { const hub = pos["cat:" + r.category], a = i * 2.399963;
+    pos[r.id] ||= { x: hub.x + Math.cos(a) * (40 + (i % 7) * 9), y: hub.y + Math.sin(a) * (40 + (i % 7) * 9) };
+    nodes.push({ id: r.id, rule: r, cat: r.category, r: 3 + Math.sqrt(r.times_seen) * 1.5, ...pos[r.id] });
+    edges.push({ a: r.id, b: "cat:" + r.category, len: 62, k: 0.05, kind: "cat" }); });
+  for (const e of S.related) if (byId[e.a] && byId[e.b]) edges.push({ a: e.a, b: e.b, len: 80, k: 0.012 + e.score * 0.03, kind: "near", cross: byId[e.a].category !== byId[e.b].category });
+  const at = Object.fromEntries(nodes.map(n => [n.id, n]));
+  for (const e of edges) { e.na = at[e.a]; e.nb = at[e.b]; }
+}
+function settle(steps, pinned) {
+  for (let s = 0; s < steps; s++) {
+    const cool = 0.9 * (1 - s / steps) + 0.1;
+    for (const n of nodes) { n.fx = -n.x * 0.004; n.fy = -n.y * 0.004; }
+    for (let i = 0; i < nodes.length; i++) for (let j = i + 1; j < nodes.length; j++) {
+      const a = nodes[i], b = nodes[j]; let dx = a.x - b.x, dy = a.y - b.y, d2 = dx * dx + dy * dy || 0.01;
+      if (d2 > 90000) continue;
+      const f = (a.hub && b.hub ? 5200 : a.hub || b.hub ? 1500 : 620) / d2, d = Math.sqrt(d2); dx /= d; dy /= d;
+      a.fx += dx * f; a.fy += dy * f; b.fx -= dx * f; b.fy -= dy * f;
+    }
+    for (const e of edges) { const a = e.na, b = e.nb, dx = b.x - a.x, dy = b.y - a.y, d = Math.sqrt(dx * dx + dy * dy) || 0.01, f = (d - e.len) * e.k;
+      a.fx += dx / d * f; a.fy += dy / d * f; b.fx -= dx / d * f; b.fy -= dy / d * f; }
+    for (const n of nodes) { if (n === pinned) continue; const m = n.hub ? 0.35 : 1;
+      n.x += Math.max(-14, Math.min(14, n.fx * m)) * cool; n.y += Math.max(-14, Math.min(14, n.fy * m)) * cool; }
+  }
+  for (const n of nodes) pos[n.id] = { x: n.x, y: n.y };
+}
+function fit() {
+  if (!mapEl) return;
+  const w = mapEl.clientWidth, hh = mapEl.clientHeight; let x0 = 1e9, x1 = -1e9, y0 = 1e9, y1 = -1e9;
+  for (const n of nodes) { x0 = Math.min(x0, n.x); x1 = Math.max(x1, n.x); y0 = Math.min(y0, n.y); y1 = Math.max(y1, n.y); }
+  const left = w > 700 ? 250 : 0;
+  const right = 110;      // room for the labels of the outermost nodes
+  cam.k = Math.min((w - left - right - 40) / (x1 - x0 || 1), (hh - 90) / (y1 - y0 || 1), 2.2);
+  cam.x = left + (w - left - right) / 2 + 20 - (x0 + x1) / 2 * cam.k; cam.y = hh / 2 - (y0 + y1) / 2 * cam.k;
+}
+function zoomBy(f, cx, cy) {
+  if (!mapEl) return; cx ??= mapEl.clientWidth / 2; cy ??= mapEl.clientHeight / 2;
+  const k = Math.max(0.25, Math.min(5, cam.k * f)); cam.x = cx - (cx - cam.x) * k / cam.k; cam.y = cy - (cy - cam.y) * k / cam.k; cam.k = k; draw();
+}
+function startMap() {
+  const fresh0 = !nodes.length || nodes.length !== S.rules.length + new Set(S.rules.map(r => r.category)).size;
+  buildGraph();
+  if (fresh0) settle(320);
+  const canvas = $("canvas", mapEl); ctx = canvas.getContext("2d");
+  let lastW = 0;
+  const size = () => { const d = window.devicePixelRatio || 1, w = mapEl.clientWidth; canvas.width = w * d; canvas.height = mapEl.clientHeight * d; if (w && w !== lastW) { fit(); lastW = w; } draw(); };
+  resizeObs = new ResizeObserver(size); resizeObs.observe(mapEl); size();
+  let drag = null;
+  const world = e => { const b = canvas.getBoundingClientRect(); return { sx: e.clientX - b.left, sy: e.clientY - b.top, x: (e.clientX - b.left - cam.x) / cam.k, y: (e.clientY - b.top - cam.y) / cam.k }; };
+  const hit = p => { let best = null, bd = 1e9; for (const n of nodes) { const d = Math.hypot(n.x - p.x, n.y - p.y) - n.r; if (d < 6 / cam.k && d < bd) { best = n; bd = d; } } return best; };
+  canvas.onpointerdown = e => { const p = world(e), n = hit(p); canvas.setPointerCapture(e.pointerId);
+    drag = { n, sx: p.sx, sy: p.sy, cx: cam.x, cy: cam.y, moved: false }; canvas.classList.add("dragging"); };
+  canvas.onpointermove = e => { const p = world(e);
+    if (drag) { if (Math.hypot(p.sx - drag.sx, p.sy - drag.sy) > 4) drag.moved = true;
+      if (drag.n && drag.moved) { drag.n.x = p.x; drag.n.y = p.y; settle(2, drag.n); } else if (!drag.n) { cam.x = drag.cx + p.sx - drag.sx; cam.y = drag.cy + p.sy - drag.sy; }
+      draw(); return; }
+    const n = hit(p); if (n !== hover) { hover = n; canvas.classList.toggle("pointing", !!n); draw(); }
+    const tip = $("#tip"); tip.hidden = !n;
+    if (n) { tip.textContent = n.hub ? catName(n.cat) + ", " + S.rules.filter(r => r.category === n.cat).length + " rules" : n.rule.title + stateWords(n.rule); tip.style.left = Math.min(e.clientX + 14, window.innerWidth - 340) + "px"; tip.style.top = e.clientY + 16 + "px"; } };
+  canvas.onpointerup = e => { canvas.classList.remove("dragging"); const d = drag; drag = null; if (!d) return;
+    if (d.n && d.moved) { settle(40, d.n); draw(); return; }
+    if (!d.moved) { if (d.n && d.n.hub) { catFilter = catFilter === d.n.cat ? null : d.n.cat; render(); } else if (d.n) select(d.n.id); else if (selected) closeRule(); } };
+  canvas.onpointerleave = () => { hover = null; $("#tip").hidden = true; draw(); };
+  canvas.onwheel = e => { e.preventDefault(); const p = world(e); zoomBy(e.deltaY < 0 ? 1.12 : 1 / 1.12, p.sx, p.sy); };
+}
+function draw() { cancelAnimationFrame(raf); raf = requestAnimationFrame(paint); }
+function paint() {
+  if (!ctx || !mapEl) return;
+  const css = v => theme[v], d = window.devicePixelRatio || 1;
+  ctx.setTransform(d, 0, 0, d, 0, 0); ctx.clearRect(0, 0, mapEl.clientWidth, mapEl.clientHeight);
+  ctx.translate(cam.x, cam.y); ctx.scale(cam.k, cam.k);
+  const focus = hover && !hover.hub ? hover.id : selected, near = new Set((neighbours[focus] || []).map(([id]) => id));
+  const lit = n => n.hub ? (!catFilter || catFilter === n.cat) : litIds.has(n.id);
+  ctx.lineWidth = 1 / cam.k;
+  for (const e of edges) {
+    const on = lit(e.na) && lit(e.nb), strong = focus && (e.a === focus || e.b === focus);
+    if (e.kind === "cat" && !strong && cam.k < 0.5) continue;
+    ctx.strokeStyle = strong ? css("--edge-strong") : css("--edge"); ctx.globalAlpha = on ? (e.kind === "near" && !e.cross && !strong ? 0.55 : 1) : 0.25;
+    ctx.beginPath(); ctx.moveTo(e.na.x, e.na.y); ctx.lineTo(e.nb.x, e.nb.y); ctx.stroke();
+  }
+  const labels = [];
+  for (const n of nodes) {
+    const on = lit(n); ctx.globalAlpha = on ? 1 : 0.14;
+    if (n.hub) { ctx.fillStyle = css("--bg"); ctx.strokeStyle = catColor(n.cat); ctx.lineWidth = 2.5 / Math.max(cam.k, 0.6);
+      ctx.beginPath(); ctx.arc(n.x, n.y, n.r, 0, 6.2832); ctx.fill(); ctx.stroke(); labels.push([n, catName(n.cat), true, on]); continue; }
+    const r = n.rule, f = fresh(r.id), fade = f === "fresh" ? 1 : f === "fading" ? 0.62 : 0.4;
+    ctx.beginPath(); ctx.arc(n.x, n.y, n.r, 0, 6.2832);
+    if (!r.enabled) { ctx.strokeStyle = catColor(n.cat, 0.8); ctx.lineWidth = 1.4 / cam.k; ctx.stroke(); }
+    else { ctx.fillStyle = broken(r.id) ? css("--bad") : catColor(n.cat, fade); ctx.fill(); }
+    if (coreSet.has(r.id)) { ctx.strokeStyle = broken(r.id) ? css("--bad") : catColor(n.cat); ctx.lineWidth = 1 / cam.k; ctx.beginPath(); ctx.arc(n.x, n.y, n.r + 2.6, 0, 6.2832); ctx.stroke(); }
+    if (r.id === selected) { ctx.strokeStyle = css("--ink"); ctx.lineWidth = 2 / cam.k; ctx.beginPath(); ctx.arc(n.x, n.y, n.r + 5, 0, 6.2832); ctx.stroke(); }
+    if (on && (r.id === focus || near.has(r.id) || cam.k > 1.75 || query)) labels.push([n, r.title.length > 46 ? r.title.slice(0, 44) + "…" : r.title, false, on]);
+  }
+  ctx.globalAlpha = 1; ctx.textBaseline = "middle";
+  for (const [n, text, hub, on] of labels) {
+    const px = (hub ? 12.5 : 11) / cam.k; ctx.font = (hub ? "650 " : "500 ") + px + "px 'Segoe UI Variable Text','Segoe UI',system-ui,sans-serif";
+    const x = n.x + n.r + 5 / cam.k, w = ctx.measureText(text).width; ctx.globalAlpha = on ? 1 : 0.3;
+    ctx.fillStyle = css("--bg"); ctx.globalAlpha *= 0.82; ctx.fillRect(x - 2 / cam.k, n.y - px * 0.7, w + 4 / cam.k, px * 1.4);
+    ctx.globalAlpha = on ? 1 : 0.3; ctx.fillStyle = hub ? css("--ink") : css("--ink-2"); ctx.fillText(text, x, n.y);
+  }
+  ctx.globalAlpha = 1;
+}
+
+/* ---------- build from the chats ---------- */
+let engine = null, buildProblems = [], engineForm = { base_url: "", model: "", api_key: "" }, engineNote = "", polling = false;
+const job = () => (S.build && S.build.job) || { state: "idle" };
+function renderBuild(v) {
+  const b = S.build || { engines: [], job: { state: "idle" } }, j = job(), pad = h("div", { class: "pad build" });
+  const ready = b.engines.filter(e => e.ready);
+  if (!engine || !b.engines.some(e => e.id === engine)) engine = (ready[0] || b.engines[0] || {}).id || null;
+  pad.append(h("h2", {}, "Build your map from your chats"),
+    h("p", { class: "lead" }, "A model reads everything you typed to Claude Code on this computer and writes down how you want to be worked with: the rules, with your own sentences as evidence, the short core every session starts with, and a suggested skill for each job you asked for again and again. Nothing is installed until you switch it on."));
+  if (j.state === "running") {
+    const pct = j.total ? Math.round(100 * j.done / j.total) : null;
+    pad.append(h("div", { class: "progress", role: "status" },
+      h("div", { class: "step" }, h("b", {}, j.step), j.total ? h("span", { class: "muted num" }, j.done + " of " + j.total) : null),
+      h("div", { class: "bar" + (pct === null ? " busy" : "") }, h("i", { style: pct === null ? "" : "width:" + pct + "%" })),
+      h("p", { class: "muted" }, "This takes a few minutes for a few months of chats. You can use the other tabs meanwhile; the page stays open until it is done."),
+      h("div", { class: "actions" }, h("button", { class: "btn", onclick: () => post("/api/build/stop") }, "Stop"))));
+    v.append(pad); poll(); return;
+  }
+  if (j.state === "done" && j.summary) pad.append(result(j.summary));
+  else if (j.state === "failed") pad.append(problems(["The build stopped: " + j.error, "Your map is as it was. Pick the model again, or try again."]));
+  else if (j.state === "stopped") pad.append(h("p", { class: "note" }, "Stopped. Your map is as it was. What was read so far is kept, so the next build starts where this one stopped."));
+  else if (b.last) pad.append(h("p", { class: "note" }, "Last built on " + b.last.when + " from " + b.last.prompts + " prompts. Building again reads all your chats; what was read before is not asked again."));
+
+  pad.append(h("h3", {}, "Who reads your chats"));
+  const list = h("div", { class: "engines", role: "radiogroup", "aria-label": "Who reads your chats" });
+  for (const e of b.engines) {
+    list.append(h("label", { class: "engine" + (engine === e.id ? " on" : "") },
+      h("input", { type: "radio", name: "engine", value: e.id, checked: engine === e.id, onchange: () => { engine = e.id; buildProblems = []; render(); } }),
+      h("span", {}, h("b", {}, e.label), h("span", { class: "tag" + (e.ready ? " core" : "") }, e.ready ? "Ready" : "Not set up"), h("small", {}, e.detail))));
+  }
+  pad.append(list);
+  if (engine === "api") {
+    const field = (key, label, hint, type) => h("label", {}, h("span", {}, label, hint ? h("span", { class: "hint" }, " " + hint) : null),
+      h("input", { type: type || "text", value: engineForm[key], autocomplete: "off", spellcheck: "false", oninput: e => { engineForm[key] = e.target.value; } }));
+    pad.append(h("div", { class: "form wide" },
+      h("div", { class: "three" }, field("base_url", "Address", "for example http://localhost:11434/v1"), field("model", "Model", "as the server names it"),
+        field("api_key", "Key", "only if the server needs one; a saved key is kept when this stays empty", "password")),
+      h("div", { class: "actions" }, h("button", { class: "btn", onclick: saveEngine }, "Save and check"),
+        engineNote ? h("span", { role: "status", class: "muted" }, engineNote) : null)));
+  }
+  if (buildProblems.length) pad.append(problems(buildProblems));
+  const chosen = b.engines.find(e => e.id === engine);
+  pad.append(h("div", { class: "actions go" },
+    h("button", { class: "btn primary big", disabled: !chosen || !chosen.ready, onclick: startBuild }, b.last || !b.starter_only ? "Build again from my chats" : "Build my map"),
+    h("span", { class: "muted" }, chosen && chosen.ready ? "Your rules so far stay. Starter rules you said yourself are rewritten in your words." : "Set up who reads your chats first.")));
+  v.append(pad);
+}
+function result(s) {
+  const box = h("div", { class: "result" }, h("h3", {}, "Your map is built"),
+    h("div", { class: "facts num" }, [[s.rules, "new rule"], [s.rewritten, "starter rule in your words", "starter rules in your words"],
+      [s.skills.length, "suggested skill"], [s.questions, "open question"], [s.prompts, "prompt read", "prompts read"]]
+      .map(([n, one, many]) => h("div", {}, h("b", {}, String(n)), n === 1 ? one : many || one + "s"))));
+  const left = Object.entries(s.left_out || {}).map(([why, n]) => (n === 1 ? "1 finding" : n + " findings") + " left out because " + why);
+  if (s.failed_batches) left.push((s.failed_batches === 1 ? "1 part" : s.failed_batches + " parts") + " of your chats could not be read; build again to try once more");
+  if (s.starter_kept) left.push((s.starter_kept === 1 ? "1 starter rule" : s.starter_kept + " starter rules") + " kept that you never said; switch them off in Rules if they do not fit");
+  if (left.length) box.append(h("ul", { class: "muted small" }, left.map(t => h("li", {}, t))));
+  const claude = ((S.exports || []).find(f => f.name === "CLAUDE.md") || { tools: [] }).tools[0];
+  box.append(h("div", { class: "actions" },
+    h("button", { class: "btn primary", onclick: () => { view = "map"; render(); } }, "See the map"),
+    s.skills.length ? h("button", { class: "btn", onclick: () => { view = "skills"; query = ""; render(); } }, "See the suggested skills") : null,
+    s.questions ? h("button", { class: "btn", onclick: () => { stateFilter = "question"; query = ""; view = "rules"; render(); } }, "See the open questions") : null,
+    claude ? h("label", { class: "switch", title: "Puts the core into " + claude.target + ". Text of your own there is kept." },
+      h("input", { type: "checkbox", checked: claude.live, onchange: e => { e.target.disabled = true; installTool("claude", e.target.checked ? "install" : "remove"); } }),
+      claude.live ? "Claude Code uses it" : "Use it in Claude Code") : null));
+  return box;
+}
+async function post(path, body) { const { ok, data } = await api(path, body || {}); take(data); return { ok, data }; }
+async function saveEngine() {
+  engineNote = "Checking the address"; render();
+  const { ok, data } = await post("/api/engine", engineForm);
+  engineNote = ok ? "Saved. The model answers." : ""; buildProblems = ok ? [] : data.refused || ["Not saved."];
+  if (ok) engineForm.api_key = "";
+  render();
+}
+async function startBuild() {
+  buildProblems = [];
+  const { ok, data } = await post("/api/build", { engine });
+  if (!ok) buildProblems = data.refused || ["The build did not start."];
+  render();
+}
+async function poll() {
+  if (polling) return; polling = true;
+  while (job().state === "running") {
+    await new Promise(r => setTimeout(r, 1500));
+    try { const { data } = await api("/api/build"); S.build = data; } catch (e) { break; }
+    if (view === "build" && job().state === "running") render();
+  }
+  polling = false;
+  try { const { data } = await api("/api/state"); take(data); } catch (e) { /* the next action loads it */ }
+  render();
+}
+
+/* ---------- the page stays up while a tab shows it ---------- */
+const TAB = Math.random().toString(36).slice(2, 12);
+const alive = () => fetch("/api/alive?tab=" + TAB, { headers: { "X-Brain-Token": TOKEN }, cache: "no-store" }).catch(() => {});
+alive(); setInterval(alive, 20000);
+addEventListener("pagehide", () => navigator.sendBeacon("/api/bye?t=" + encodeURIComponent(TOKEN) + "&tab=" + TAB));
+addEventListener("pageshow", e => { if (e.persisted) alive(); });
+
+/* ---------- start ---------- */
+let updating = false, updateNote = "";
+$("#update").addEventListener("click", async e => {
+  if (!leaveRule()) return;
+  updating = true; e.target.disabled = true; $("#updated").textContent = "reading the new chats";
+  try {
+    const { ok, data } = await api("/api/scan", {});
+    take(data);
+    updateNote = !ok ? "could not update" : (data.added ? data.added + (data.added === 1 ? " new correction" : " new corrections") : "nothing new") + (data.repo ? ", " + data.repo : "");
+  } catch (err) { updateNote = ""; }
+  updating = false; e.target.disabled = false; render();
+  setTimeout(() => { updateNote = ""; if (S) renderTop(); }, 12000);
+});
+function take(data) { if (data && data.rules) { S = data; exportLoaded = null; index(); } }
+$("#q").addEventListener("input", e => {
+  query = e.target.value.trim();
+  if (view === "map") { litIds = new Set(S.rules.filter(matches).map(r => r.id)); draw(); return; }
+  if (view !== "rules" && view !== "skills") view = "rules";
+  render(); $("#q").focus();
+});
+document.addEventListener("keydown", e => {
+  if (e.key === "/" && !/INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName)) { e.preventDefault(); $("#q").focus(); }
+  if (e.key === "Escape" && selected && !/TEXTAREA/.test(document.activeElement.tagName)) closeRule();
+});
+matchMedia("(prefers-color-scheme: dark)").addEventListener("change", () => render());
+addEventListener("beforeunload", e => { if (isDirty()) e.preventDefault(); });
+// the address keeps the view and the open rule, so Back and a bookmark work
+function fromHash() { const [v, id] = decodeURIComponent(location.hash.slice(1)).split("/");
+  if (VIEWS.some(([x]) => x === v)) view = v; selected = id || null; if (!opened()) selected = null; }
+addEventListener("hashchange", () => { if (location.hash !== hashFor() && S) { if (leaveRule()) fromHash(); render(); } });
+api("/api/state").then(({ data }) => {
+  take(data);
+  if (!location.hash && S.build && S.build.starter_only && !S.build.last) view = "build";     // first start: one button to a map of your own
+  fromHash(); render();
+  if (job().state === "running") poll();
+}).catch(() => {});
+</script>
+</body>
+</html>

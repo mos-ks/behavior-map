@@ -1,0 +1,21 @@
+name: core
+description: The always-on short list: firm rules that apply in every session
+include_scopes: []
+include_ids:
+  - git-no-ai-attribution
+  - git-ask-before-pushing
+  - code-fix-the-cause
+  - code-finished-code
+  - testing-done-means-checked
+  - testing-look-at-your-output
+  - communication-result-first
+  - communication-yes-no-first
+  - communication-state-what-is-needed
+  - autonomy-keep-going
+  - autonomy-ask-before-destructive
+  - autonomy-stay-on-task
+  - writing-voice-plain-words
+  - security-privacy-never-print-secrets
+  - agents-cost-no-paid-spend-without-ok
+  - product-thinking-simplest-thing-first
+exclude_ids: []

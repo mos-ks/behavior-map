@@ -1,0 +1,6 @@
+name: paper
+description: Papers, reports and other long documents
+include_scopes: [paper]
+include_ids:
+  - writing-voice-plain-words
+exclude_ids: []

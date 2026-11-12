@@ -1,0 +1,6 @@
+name: ui
+description: Designing or changing a user interface (read together with the coding profile)
+include_scopes: [ui]
+include_ids:
+  - testing-look-at-your-output
+exclude_ids: []

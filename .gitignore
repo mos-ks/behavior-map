@@ -1,0 +1,5 @@
+# your map: your rules quote you, keep it in its own private repository
+map/
+__pycache__/
+*.pyc
+*.tmp

@@ -1,0 +1,5 @@
+name: coding
+description: Writing, testing and shipping code
+include_scopes: [always, coding]
+include_ids: []
+exclude_ids: []

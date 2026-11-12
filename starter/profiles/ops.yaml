@@ -1,0 +1,7 @@
+name: ops
+description: Working on the owner's machines: servers, devices, long jobs
+include_scopes: [ops]
+include_ids:
+  - security-privacy-never-print-secrets
+  - autonomy-ask-before-destructive
+exclude_ids: []
