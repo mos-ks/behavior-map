@@ -714,7 +714,7 @@ def init(root=ROOT):
         for name in files:                       # the starter rules count as said today, so none shows as stale
             path = os.path.join(folder, name)
             write_text(path, read_text(path).replace("last_seen: null", "last_seen: " + today))
-    write_text(os.path.join(root, ".gitignore"), "signals/state.json\nsignals/skills.json\nsignals/judge.json\n")
+    write_text(os.path.join(root, ".gitignore"), "signals/state.json\nsignals/skills.json\nsignals/judge.json\n_work/*.log\n_work/*.lock\n")
     run(root)
     return "started your map in %s with the starter rules" % folder_text(root)
 
