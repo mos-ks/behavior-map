@@ -137,6 +137,35 @@ To keep its history, make `map/` its own **private** git repository (`git init` 
 remote). Update then commits and pushes it, after a secret scan with gitleaks (needs Docker). Without Docker, or
 when the scan finds something, the change is committed locally and not pushed.
 
+## More than one computer
+
+The private repo also keeps the map the same on every computer you work on. Each computer reads its own chats
+and pushes what it learned; the others take it in on their next pull.
+
+On the second computer:
+
+```
+git clone https://github.com/mos-ks/behavior-map.git
+git clone <your private map repo> behavior-map/map
+cd behavior-map && python3 build.py --install
+```
+
+The page pulls when it starts and before every Update. A computer without a browser (a server you reach over
+ssh) runs the same steps from cron instead:
+
+```
+*/30 * * * * cd ~/behavior-map && python3 sync.py --update >> map/_work/sync.log 2>&1
+```
+
+`--update` pulls, reads that computer's new chats, rebuilds, refreshes the installed copies and pushes.
+`--follow` only pulls and rebuilds, for a computer whose chats should not count.
+
+Clashes settle themselves where they can. The generated files are written again from the merged rules. A rule
+changed on two computers merges field by field: counts add up, quotes from both stay, and a wording edit on one
+side and a new quote on the other both survive. The Inbox merges by correction, and a decision beats an open
+entry. Only the same field edited differently on both computers stops the pull: nothing is lost, the page names
+the file, and the next Update goes through once you have kept one version.
+
 Optional `map/settings.json`:
 
 ```
@@ -153,6 +182,7 @@ Optional `map/settings.json`:
 | `python ui.py` | The page, in this terminal (Ctrl+C stops it). `--background` runs it without a window until its tab is closed (what `brain.cmd` and `brain.sh` do); `--no-open` starts it without opening the browser |
 | `python bootstrap.py` | Build the map from your chats without the page. `engines` says which engines are ready |
 | `python build.py` | Check the rules and write the generated files. `--check` only checks, `--install [claude, codex, opencode, all]` also installs, `--uninstall [...]` takes it out again |
+| `python sync.py` | Save the map to its repo: commit, pull, secret scan, push. `--follow` only pulls and rebuilds, `--update` is the whole Update button without the page |
 | `python learn.py scan` | Read new chats for corrections, without the page |
 | `python learn.py prompts` | Write everything you typed to `map/_work/prompts.jsonl` (used by BOOTSTRAP.md) |
 | `python skills.py` | Print the skill library |
@@ -162,7 +192,8 @@ The map can live somewhere else: set the environment variable `BEHAVIOR_MAP_DIR`
 
 ## Limits
 
-- Corrections, skill use and the build read Claude Code sessions on this computer only.
+- Corrections, skill use and the build read Claude Code sessions on this computer only. Other computers add
+  theirs through the shared repo (see More than one computer).
 - The build is as good as the model that reads. A small local model finds fewer rules and words them less well
   than Claude; check the result in the Rules tab either way.
 - The categories and scopes are fixed in `build.py`.

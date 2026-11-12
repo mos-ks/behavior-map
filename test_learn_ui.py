@@ -3,6 +3,7 @@
 
     python -m unittest test_learn_ui -v
 """
+import glob
 import json
 import os
 import shutil
@@ -374,6 +375,95 @@ class SaveToGitHubTest(unittest.TestCase):
         inner = os.path.join(self.work, "inner")
         os.makedirs(inner)
         self.assertIn("not a git repo", sync.save(inner, scan=lambda root: 0))
+
+
+class TwoComputersTest(unittest.TestCase):
+    """One map, two clones (say a laptop and a server), a local folder standing in for GitHub."""
+
+    def setUp(self):
+        self.base = tempfile.mkdtemp(prefix="bmap-two-")
+        self.addCleanup(shutil.rmtree, self.base, True)
+        self.remote, self.a, self.b = (os.path.join(self.base, n) for n in ("remote.git", "a", "b"))
+        sync.run(["git", "init", "-q", "--bare", "-b", "main", self.remote], self.base)
+        os.makedirs(self.a)
+        build.init(self.a)
+        self.git(self.a, ["init", "-q", "-b", "main"])
+        self.who(self.a)
+        self.git(self.a, ["remote", "add", "origin", self.remote])
+        sync.commit(self.a, "first")
+        self.git(self.a, ["push", "-q", "-u", "origin", "main"])
+        self.git(self.base, ["clone", "-q", self.remote, self.b])
+        self.who(self.b)
+        self.rel = os.path.relpath(sorted(glob.glob(os.path.join(self.a, "rules", "*", "*.md")))[0], self.a).replace("\\", "/")
+
+    def git(self, cwd, args):
+        code, out = sync.run(["git"] + args, cwd)
+        self.assertEqual(code, 0, out)
+        return out
+
+    def who(self, root):
+        self.git(root, ["config", "user.email", "t@example.invalid"])
+        self.git(root, ["config", "user.name", "T"])
+
+    def rule(self, root):
+        return build.parse_rule(build.read_text(os.path.join(root, self.rel)), self.rel)
+
+    def change(self, root, **fields):
+        r = self.rule(root)
+        r.update(fields)
+        build.write_text(os.path.join(root, self.rel), build.render_rule(r))
+        build.run(root)
+
+    def save(self, root):
+        return sync.save(root, scan=lambda _root: 0)
+
+    def test_the_other_computer_takes_in_a_change_and_rebuilds(self):
+        self.change(self.a, rule="Wording from the laptop, kept as it is.")
+        self.assertEqual(self.save(self.a), "pushed to GitHub")
+        self.assertIn("took in 1 change", sync.follow(self.b))
+        self.assertEqual(self.rule(self.b)["rule"], "Wording from the laptop, kept as it is.")
+        self.assertIn("Wording from the laptop", build.read_text(os.path.join(self.b, "rules.json")))
+        self.assertEqual(sync.follow(self.b), "nothing new from the other computers")
+
+    def test_different_fields_of_one_rule_merge_and_counts_add_up(self):
+        start = self.rule(self.a)
+        quote = {"date": "2026-11-12", "project": "server", "quote": "said on the server"}
+        self.change(self.a, rule="Wording from the laptop.", times_seen=int(start["times_seen"]) + 1)
+        self.change(self.b, times_seen=int(start["times_seen"]) + 2, quotes=start["quotes"] + [quote], last_seen="2026-11-12")
+        self.assertEqual(self.save(self.a), "pushed to GitHub")
+        self.assertEqual(self.save(self.b), "pushed to GitHub")
+        merged = self.rule(self.b)
+        self.assertEqual(merged["rule"], "Wording from the laptop.")
+        self.assertEqual(int(merged["times_seen"]), int(start["times_seen"]) + 3)
+        self.assertIn(quote, merged["quotes"])
+        self.assertEqual(build.run(self.b, write=False)[0], [])
+        sync.follow(self.a)
+        self.assertEqual(self.rule(self.a), merged)
+        self.assertEqual(self.git(self.a, ["status", "--porcelain"]), "")
+
+    def test_one_field_edited_differently_on_both_stops_and_names_the_file(self):
+        self.change(self.a, rule="The laptop's wording.")
+        self.change(self.b, rule="The server's wording.")
+        self.assertEqual(self.save(self.a), "pushed to GitHub")
+        line = self.save(self.b)
+        self.assertIn("not pushed: changed here and on another computer: " + self.rel, line)
+        self.assertEqual(self.rule(self.b)["rule"], "The server's wording.")              # nothing lost on either side
+        self.assertEqual(self.git(self.b, ["status", "--porcelain"]), "")
+        self.assertFalse(sync.rebasing(self.b))
+
+    def test_the_corrections_log_merges_by_correction(self):
+        learn.note("dont do that on the laptop again", root=self.a)
+        shared = learn.note("never push without asking", root=self.a)
+        self.assertEqual(self.save(self.a), "pushed to GitHub")
+        sync.follow(self.b)
+        learn.decide(shared["id"], "dismiss", root=self.b)
+        learn.note("stop opening windows on the server", root=self.b)
+        learn.note("i said no new files here", root=self.a)
+        self.assertEqual(self.save(self.a), "pushed to GitHub")
+        self.assertEqual(self.save(self.b), "pushed to GitHub")
+        sigs = {s["text"]: s["status"] for s in learn.load_signals(self.b)}
+        self.assertEqual(len(sigs), 4)
+        self.assertEqual(sigs["never push without asking"], "dismissed")
 
 
 class LocalModelTest(MapCase):

@@ -511,9 +511,11 @@ def already_running(port):
 
 
 def read_new_chats(root):
-    """Runs once behind the page: the page is up at once and its first load waits for this."""
+    """Runs once behind the page: the page is up at once and its first load waits for this. It first takes
+    in what the other computers saved, so the page shows the map as it is everywhere."""
     with LOCK:
         try:
+            print(sync.follow(root), flush=True)
             rescan(root)
         except (OSError, ValueError) as e:
             print("could not read the new chats: %s" % e, flush=True)
