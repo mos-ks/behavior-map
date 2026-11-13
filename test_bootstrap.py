@@ -200,12 +200,17 @@ class EngineTest(unittest.TestCase):
 
 class PageBuildTest(BuildCase):
     def test_the_page_runs_the_build_in_the_background(self):
-        worker = ui.start_build("api", self.root, ask=lambda s, u: (_ for _ in ()).throw(OSError("no model")))
-        worker.join(30)
-        self.assertEqual(ui.build_status(self.root)["job"]["state"], "failed")      # no chats in the default place for this copy
         original = bootstrap.learn.sessions_dir
-        bootstrap.learn.sessions_dir = lambda: self.projects
         self.addCleanup(setattr, bootstrap.learn, "sessions_dir", original)
+        empty = tempfile.mkdtemp(prefix="bmap-empty-")                            # never the real chats
+        self.addCleanup(shutil.rmtree, empty, True)
+        bootstrap.learn.sessions_dir = lambda: empty
+        worker = ui.start_build("api", self.root, ask=FakeModel())
+        worker.join(30)
+        job = ui.build_status(self.root)["job"]
+        self.assertEqual(job["state"], "failed")
+        self.assertIn("No chats were found", job.get("error", ""))
+        bootstrap.learn.sessions_dir = lambda: self.projects
         worker = ui.start_build("api", self.root, ask=FakeModel())
         worker.join(60)
         status = ui.build_status(self.root)

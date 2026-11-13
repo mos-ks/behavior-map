@@ -42,8 +42,14 @@ MAX_QUOTES = 4
 MARKERS = re.compile(
     r"\b(dont|do not|doesnt|never|always|stop|from now on|i said|i told you|told you|as i said|like i said|again|"
     r"why did you|why do you|why are you|why would you|not what i|no more|no need|instead of|should have|shouldnt|"
-    r"you forgot|forgot to|remember|next time|wtf|nein|nicht so|immer|niemals|hoer auf|warum hast)\b")
-STARTS_NO = re.compile(r"^(no|nope|nah|wrong)\b")
+    r"you forgot|forgot to|remember|next time|wtf|"
+    # German, with and without umlauts (ö or oe)
+    r"nein|nicht so|nicht mehr|bitte nicht|kein[e]? (?:mehr|weiteren?)|immer|niemals|nie wieder|nie|"
+    r"h(?:ö|oe)r auf|lass das|ab jetzt|ab sofort|in zukunft|n(?:ä|ae)chstes mal|schon wieder|nochmal|"
+    r"(?:ich )?hab(?:e)? (?:ich )?(?:dir |es )?(?:doch )?(?:schon )?gesagt|ich sagte|wie gesagt|"
+    r"warum hast|wieso hast|warum machst|wieso machst|warum tust|"
+    r"du hast vergessen|vergiss nicht|merk dir|statt(?:dessen)?|das war falsch)\b")
+STARTS_NO = re.compile(r"^(no|nope|nah|wrong|nein|falsch)\b")
 # whole links and addresses first, then what build.py already treats as private, then anything that looks like a key
 REDACT = ([re.compile(r"https?://\S+", re.I), re.compile(r"\b\d{1,3}(?:\.\d{1,3}){3}(?::\d+)?\b")]
           + [pattern for _label, pattern in build.PRIVATE_PATTERNS]

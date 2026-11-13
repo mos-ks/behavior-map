@@ -3,6 +3,7 @@
 
     python -m unittest test_learn_ui -v
 """
+import datetime
 import glob
 import json
 import os
@@ -24,6 +25,12 @@ import sync
 import ui
 
 RULE = "git-no-ai-attribution"
+# the chats in these tests were typed today: the scan only reads what is newer than the map
+TODAY = datetime.date.today().isoformat()
+
+
+def day(offset):
+    return (datetime.date.today() + datetime.timedelta(days=offset)).isoformat()
 
 
 def copy_map():
@@ -44,7 +51,7 @@ def transcript(projects, lines, name="s1"):
     with open(os.path.join(folder, name + ".jsonl"), "a", encoding="utf-8") as f:
         for text, extra in lines:
             row = {"type": "user", "origin": {"kind": "human"}, "entrypoint": "claude-vscode", "cwd": "C:\\work\\demo",
-                   "timestamp": "2026-11-12T10:00:00Z", "sessionId": name, "message": {"content": text}}
+                   "timestamp": TODAY + "T10:00:00Z", "sessionId": name, "message": {"content": text}}
             row.update(extra)
             f.write(json.dumps(row) + "\n")
 
@@ -61,6 +68,11 @@ class CorrectionTest(unittest.TestCase):
     def test_what_counts_as_a_correction(self):
         for text in ("dont add a co-author line", "i said no emoji in the ui", "no, use the subscription", "why did you ask me again"):
             self.assertTrue(learn.is_correction(text), text)
+        for text in ("hör auf mit den emojis", "hoer auf mit den emojis", "hab ich dir doch gesagt, kein co-author",
+                     "schon wieder ein neues fenster", "ab jetzt immer auf main pushen", "falsch, nimm das abo",
+                     "warum hast du das gelöscht", "nächstes mal erst fragen"):
+            self.assertTrue(learn.is_correction(text), text)
+        self.assertFalse(learn.is_correction("bau mir bitte den header neu"))
         for text in ("fix the header", "ok", "<task-notification>dont</task-notification>", "/simplify never", "x " * 300 + "never"):
             self.assertFalse(learn.is_correction(text), text[:40])
 
@@ -102,7 +114,7 @@ class ScanTest(MapCase):
         self.assertEqual(changed, [RULE])
         learn.review(self.root)                                           # a second review must not count again
         self.assertEqual(rule(self.root)["times_seen"], before + 1)
-        self.assertEqual(rule(self.root)["last_seen"], "2026-11-12")
+        self.assertEqual(rule(self.root)["last_seen"], TODAY)
         self.assertEqual(summary["broken"], {RULE: 1})
         sig = learn.load_signals(self.root)[0]
         learn.decide(sig["id"], "dismiss", root=self.root)                # the owner says it was not about this rule
@@ -112,8 +124,8 @@ class ScanTest(MapCase):
     def test_an_untouched_correction_leaves_the_inbox_after_a_month(self):
         transcript(self.projects, [("never ever zzqx the wibble again", {})])
         learn.scan(self.root, self.projects)
-        self.assertEqual(learn.review(self.root, now="2026-11-20")[0]["counts"]["open"], 1)
-        self.assertEqual(learn.review(self.root, now="2026-12-20")[0]["counts"]["expired"], 1)
+        self.assertEqual(learn.review(self.root, now=day(7))[0]["counts"]["open"], 1)
+        self.assertEqual(learn.review(self.root, now=day(37))[0]["counts"]["expired"], 1)
 
     def test_all_prompts_are_written_once_with_private_details_blanked(self):
         transcript(self.projects, [("mail it to someone@example.org please", {"timestamp": "2026-03-01T10:00:00Z"}),
@@ -265,7 +277,7 @@ class SkillLibraryTest(MapCase):
         folder = os.path.join(self.projects, "c--tool")
         os.makedirs(folder)
         with open(os.path.join(folder, "s1.jsonl"), "w", encoding="utf-8") as f:
-            f.write(json.dumps({"type": "assistant", "cwd": elsewhere, "entrypoint": "claude-vscode", "timestamp": "2026-11-12T10:00:00Z",
+            f.write(json.dumps({"type": "assistant", "cwd": elsewhere, "entrypoint": "claude-vscode", "timestamp": TODAY + "T10:00:00Z",
                                 "message": {"content": [{"type": "tool_use", "name": "Skill", "input": {"skill": "run-tool"}}]}}) + "\n")
         build.write_text(os.path.join(self.root, "settings.json"), json.dumps({"own_skills": self.where["own_skills"]}))
         skills.count_use(self.root, self.projects)                         # notes the folder the chat worked in
@@ -317,7 +329,7 @@ class SkillLibraryTest(MapCase):
 
     def test_use_is_counted_once_per_load_and_not_for_script_runs(self):
         def load(name, extra=None):
-            row = {"type": "assistant", "cwd": "C:\\work\\shop", "timestamp": "2026-11-12T10:00:00Z", "entrypoint": "claude-vscode",
+            row = {"type": "assistant", "cwd": "C:\\work\\shop", "timestamp": TODAY + "T10:00:00Z", "entrypoint": "claude-vscode",
                    "message": {"content": [{"type": "tool_use", "name": "Skill", "input": {"skill": name}}]}}
             row.update(extra or {})
             return json.dumps(row)
@@ -326,7 +338,7 @@ class SkillLibraryTest(MapCase):
         with open(os.path.join(folder, "s1.jsonl"), "w", encoding="utf-8") as f:
             f.write("\n".join([load("polish"), load("polish"), load("polish", {"entrypoint": "sdk-cli"}), load("code-review")]) + "\n")
         lib = self.library()
-        self.assertEqual((lib["polish"]["used"], lib["polish"]["used_in"], lib["polish"]["last_used"]), (2, {"shop": 2}, "2026-11-12"))
+        self.assertEqual((lib["polish"]["used"], lib["polish"]["used_in"], lib["polish"]["last_used"]), (2, {"shop": 2}, TODAY))
         self.assertEqual(lib["code-review"]["source"], "built in, or removed since")     # used, but not on disk
         self.assertEqual(lib["walk-the-app"]["used"], 0)
         self.assertEqual(self.library()["polish"]["used"], 2)                            # a second read counts nothing twice
@@ -482,7 +494,7 @@ class LocalModelTest(MapCase):
         transcript(self.projects, [("please keep the tables as wide as the window", {}), ("dont do that again", {})])
         self.assertEqual(learn.scan(self.root, self.projects, wide=True), 1)            # only the marked one reaches the inbox
         self.assertEqual(sorted(s["status"] for s in learn.load_signals(self.root)), ["open", "waiting"])
-        learn.review(self.root, now="2026-12-20")                                        # never judged: dropped after a month
+        learn.review(self.root, now=day(37))                                        # never judged: dropped after a month
         self.assertEqual([s["status"] for s in learn.load_signals(self.root)], ["expired"])
 
     def test_the_model_sets_task_talk_aside_places_matches_and_words_new_rules(self):

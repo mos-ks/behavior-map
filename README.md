@@ -196,6 +196,9 @@ The map can live somewhere else: set the environment variable `BEHAVIOR_MAP_DIR`
   theirs through the shared repo (see More than one computer).
 - The build is as good as the model that reads. A small local model finds fewer rules and words them less well
   than Claude; check the result in the Rules tab either way.
+- The build reads chats in any language the model knows and writes the rules in English, with your own words
+  kept as quotes. The daily corrections scan, which uses no model, knows English and German correction words;
+  a German correction lands in the Inbox rather than on a rule unless a local model is set up to place it.
 - The categories and scopes are fixed in `build.py`.
 - The page is for one person on one machine. It listens on 127.0.0.1 and takes changes only from its own tab.
 
